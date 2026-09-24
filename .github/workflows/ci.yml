@@ -41,8 +41,9 @@ jobs:
       - name: Set up JFrog CLI (authenticates to Artifactory)
         uses: jfrog/setup-jfrog-cli@v4
         env:
-          JF_URL: ${{ vars.JF_URL }}                       # repo VARIABLE (not secret)
-          JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}  # repo SECRET (masked in logs)
+          JF_URL: ${{ vars.JF_URL }}                     # repo VARIABLE (not secret)
+          JF_USER: ${{ vars.JF_USER }}                   # Maven needs basic auth: username +
+          JF_PASSWORD: ${{ secrets.JF_ACCESS_TOKEN }}    # identity token used as the password (SECRET)
 
       - name: Point Maven at Artifactory
         run: |
@@ -79,7 +80,8 @@ jobs:
       - uses: jfrog/setup-jfrog-cli@v4
         env:
           JF_URL: ${{ vars.JF_URL }}
-          JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
+          JF_USER: ${{ vars.JF_USER }}                   # Maven needs basic auth: username +
+          JF_PASSWORD: ${{ secrets.JF_ACCESS_TOKEN }}    # identity token used as the password
       - name: Point Maven at Artifactory
         run: |
           jf mvn-config \
@@ -107,7 +109,8 @@ jobs:
       - uses: jfrog/setup-jfrog-cli@v4
         env:
           JF_URL: ${{ vars.JF_URL }}
-          JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
+          JF_USER: ${{ vars.JF_USER }}                   # Maven needs basic auth: username +
+          JF_PASSWORD: ${{ secrets.JF_ACCESS_TOKEN }}    # identity token used as the password
 
       - name: Point Maven at Artifactory
         run: |

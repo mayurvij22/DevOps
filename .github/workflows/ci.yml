@@ -39,7 +39,7 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
 
       - name: Set up JFrog CLI (authenticates to Artifactory)
-        uses: jfrog/setup-jfrog-cli@v4
+        uses: jfrog/setup-jfrog-cli@v5
         env:
           JF_URL: ${{ vars.JF_URL }}                     # repo VARIABLE (not secret)
           JF_USER: ${{ vars.JF_USER }}                   # Maven needs basic auth: username +
@@ -77,7 +77,7 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
-      - uses: jfrog/setup-jfrog-cli@v4
+      - uses: jfrog/setup-jfrog-cli@v5
         env:
           JF_URL: ${{ vars.JF_URL }}
           JF_USER: ${{ vars.JF_USER }}                   # Maven needs basic auth: username +
@@ -106,7 +106,7 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
-      - uses: jfrog/setup-jfrog-cli@v4
+      - uses: jfrog/setup-jfrog-cli@v5
         env:
           JF_URL: ${{ vars.JF_URL }}
           JF_USER: ${{ vars.JF_USER }}                   # Maven needs basic auth: username +

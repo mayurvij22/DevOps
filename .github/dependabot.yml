@@ -1,0 +1,11 @@
+# Dependabot opens PRs automatically when dependencies have updates or CVEs.
+version: 2
+updates:
+  - package-ecosystem: maven
+    directory: "/"
+    schedule:
+      interval: weekly
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly

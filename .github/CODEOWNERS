@@ -1,0 +1,6 @@
+# CODEOWNERS auto-requests reviewers by file path.
+# With branch protection "Require review from Code Owners",
+# nobody can merge changes to these paths without approval.
+# Replace YOUR_GITHUB_USERNAME with your real username.
+*                     @YOUR_GITHUB_USERNAME
+/.github/workflows/   @YOUR_GITHUB_USERNAME

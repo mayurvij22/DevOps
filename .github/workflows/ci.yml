@@ -1,0 +1,137 @@
+# ============================================================
+# CI pipeline: Build -> Test -> Security scan -> Publish to JFrog
+# Learning goals: GitHub Actions, JFrog Artifactory, Xray, secrets
+# ============================================================
+name: CI - Build, Scan, Publish
+
+# TRIGGERS: when does this pipeline run?
+on:
+  push:
+    branches: [main]          # every merge/push to main
+  pull_request:
+    branches: [main]          # every PR targeting main (build + test + scan only)
+  workflow_dispatch:           # manual "Run workflow" button in the Actions tab
+
+# LEAST PRIVILEGE: the built-in GITHUB_TOKEN can only read code
+permissions:
+  contents: read
+
+env:
+  JAVA_VERSION: '17'
+  IMAGE_NAME: demo-app
+
+jobs:
+  # ----------------------------------------------------------
+  # JOB 1: Build and test. Dependencies come from the Artifactory
+  # VIRTUAL repo (local + remote cache of Maven Central).
+  # ----------------------------------------------------------
+  build-test:
+    name: Build & Test
+    runs-on: ubuntu-latest     # GitHub-hosted runner (could be self-hosted)
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up JFrog CLI (authenticates to Artifactory)
+        uses: jfrog/setup-jfrog-cli@v4
+        env:
+          JF_URL: ${{ vars.JF_URL }}                       # repo VARIABLE (not secret)
+          JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}  # repo SECRET (masked in logs)
+
+      - name: Point Maven at Artifactory
+        run: |
+          jf mvn-config \
+            --repo-resolve-releases=${{ vars.MAVEN_VIRTUAL_REPO }} \
+            --repo-resolve-snapshots=${{ vars.MAVEN_VIRTUAL_REPO }} \
+            --repo-deploy-releases=${{ vars.MAVEN_LOCAL_REPO }} \
+            --repo-deploy-snapshots=${{ vars.MAVEN_LOCAL_REPO }}
+
+      - name: Build and run unit tests
+        run: jf mvn clean verify
+
+      - name: Save JAR as a workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-jar
+          path: target/*.jar
+
+  # ----------------------------------------------------------
+  # JOB 2: Security scan with JFrog Xray. Runs in PARALLEL with job 1.
+  # continue-on-error = report vulnerabilities without blocking (learning mode).
+  # In production you would remove it so critical CVEs fail the build.
+  # ----------------------------------------------------------
+  security-scan:
+    name: Xray Dependency Scan
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+      - uses: jfrog/setup-jfrog-cli@v4
+        env:
+          JF_URL: ${{ vars.JF_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
+      - name: Point Maven at Artifactory
+        run: |
+          jf mvn-config \
+            --repo-resolve-releases=${{ vars.MAVEN_VIRTUAL_REPO }} \
+            --repo-resolve-snapshots=${{ vars.MAVEN_VIRTUAL_REPO }}
+      - name: Scan dependencies for CVEs and license issues
+        run: jf audit --mvn
+
+  # ----------------------------------------------------------
+  # JOB 3: Publish. Only on main (never from a PR).
+  # Pushes the JAR to the Maven LOCAL repo and a Docker image
+  # to the Docker LOCAL repo, then publishes build-info.
+  # ----------------------------------------------------------
+  publish:
+    name: Publish to Artifactory
+    needs: [build-test, security-scan]       # waits for both jobs
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+      - uses: jfrog/setup-jfrog-cli@v4
+        env:
+          JF_URL: ${{ vars.JF_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
+
+      - name: Point Maven at Artifactory
+        run: |
+          jf mvn-config \
+            --repo-resolve-releases=${{ vars.MAVEN_VIRTUAL_REPO }} \
+            --repo-resolve-snapshots=${{ vars.MAVEN_VIRTUAL_REPO }} \
+            --repo-deploy-releases=${{ vars.MAVEN_LOCAL_REPO }} \
+            --repo-deploy-snapshots=${{ vars.MAVEN_LOCAL_REPO }}
+
+      - name: Deploy JAR to Maven local repo
+        run: jf mvn clean deploy -DskipTests
+
+      - name: Build and push Docker image to Artifactory
+        env:
+          JF_URL: ${{ vars.JF_URL }}
+          JF_USER: ${{ vars.JF_USER }}
+          JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
+        run: |
+          REGISTRY="${JF_URL#https://}"; REGISTRY="${REGISTRY%/}"
+          IMAGE="$REGISTRY/${{ vars.DOCKER_LOCAL_REPO }}/${IMAGE_NAME}:${{ github.run_number }}"
+          echo "$JF_ACCESS_TOKEN" | docker login "$REGISTRY" -u "$JF_USER" --password-stdin
+          docker build -t "$IMAGE" .
+          jf docker push "$IMAGE"
+          echo "Pushed $IMAGE" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish build-info (traceability)
+        run: jf rt build-publish

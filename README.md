@@ -1,13 +1,24 @@
-# DevTools Lab: GitHub Actions + JFrog Artifactory
+<div align="center">
 
-A hands-on practice project for the **Intuit Platform Support Engineer** interview.
-You will build a real pipeline that pulls dependencies from Artifactory, scans them
-with Xray, and publishes a JAR and Docker image back to Artifactory, all from GitHub
-Actions. Then you will break it on purpose and fix it, like a support engineer.
+# 🛠️ DevTools Lab: GitHub Actions + JFrog Artifactory
 
-**Time needed:** about 3 hours (Saturday afternoon is perfect).
+**A hands-on CI/CD lab. Pull dependencies from Artifactory, scan them with Xray, and publish a JAR and Docker image
+back to Artifactory, all from GitHub Actions. Then break it on purpose and fix it like a support engineer.**
+
+![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF?logo=githubactions&logoColor=white)
+![JFrog](https://img.shields.io/badge/JFrog%20Artifactory-40BE46?logo=jfrog&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
+![Java](https://img.shields.io/badge/Java-ED8B00?logo=openjdk&logoColor=white)
+![Maven](https://img.shields.io/badge/Maven-C71A36?logo=apachemaven&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white)
+![Dependabot](https://img.shields.io/badge/Dependabot-025E8C?logo=dependabot&logoColor=white)
+
+*Built as practice for a Platform Support Engineer role · about 3 hours end to end*
+
+</div>
 
 ---
+
 
 ## 1. What this lab covers (mapped to the job description)
 
@@ -223,5 +234,11 @@ Interviewers respect initiative, and it's a strong answer to "How are you closin
 | CODEOWNERS | Auto-assigns required reviewers by file path |
 | Branch protection / rulesets | Rules on branches: required reviews, checks, no force push |
 | Better than tokens | OIDC: short-lived credentials issued per workflow run, no stored secret |
-#   D e v O p s  
- 
+
+---
+
+<div align="center">
+
+Made by **[Mayur Patil](https://github.com/mayurvij22)**
+
+</div>
